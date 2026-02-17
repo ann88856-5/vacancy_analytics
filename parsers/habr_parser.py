@@ -3,7 +3,8 @@ from bs4 import BeautifulSoup
 import time
 import json
 from datetime import datetime
-from parsers.base_parser import BaseParser
+from typing import List, Dict, Any
+from base_parser import BaseParser  # Убрали parsers. из импорта
 
 class HabrCareerParser(BaseParser):
     
@@ -21,15 +22,6 @@ class HabrCareerParser(BaseParser):
         for page in range(1, pages + 1):
             print(f"🔍 Парсинг страницы {page}...")
             
-            params = {
-                'q': query,
-                'page': page,
-                'type': 'all'
-            }
-            
-
-
-          
             params = {
                 'q': query,
                 'page': page,
