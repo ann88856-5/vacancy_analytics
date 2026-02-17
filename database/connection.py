@@ -23,6 +23,7 @@ engine = create_engine(
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+
 @contextmanager
 def get_db():
     db = SessionLocal()
@@ -35,15 +36,17 @@ def get_db():
     finally:
         db.close()
 
+
 def test_connection():
     try:
         with engine.connect() as conn:
             conn.execute(text("SELECT 1"))
-            print("✅ Подключение к БД успешно!")
+            print(" Подключение к БД успешно!")
             return True
     except Exception as e:
-        print(f"❌ Ошибка подключения: {e}")
+        print(f" Ошибка подключения: {e}")
         return False
+
 
 if __name__ == "__main__":
     test_connection()

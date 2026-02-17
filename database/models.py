@@ -1,11 +1,10 @@
-from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, Float, ForeignKey, Table
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Table
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from datetime import datetime, timezone
 
 Base = declarative_base()
 
-# Таблица связи многие-ко-многим (вакансия -> навыки)
 vacancy_skills = Table(
     'vacancy_skills',
     Base.metadata,
@@ -20,7 +19,7 @@ class Company(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(200), nullable=False, index=True)
     website = Column(String(500))
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     # Связи
     vacancies = relationship("Vacancy", back_populates="company")
@@ -42,7 +41,7 @@ class Vacancy(Base):
     published_at = Column(DateTime)
     source = Column(String(50))  # habr, hh, superjob и т.д.
     url = Column(String(500), unique=True)  # Ссылка на вакансию
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     # Связи
     company = relationship("Company", back_populates="vacancies")
@@ -58,7 +57,7 @@ class Skill(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(100), unique=True, nullable=False, index=True)
     category = Column(String(50))  # language, framework, tool, etc.
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     # Связи
     vacancies = relationship("Vacancy", secondary=vacancy_skills, back_populates="skills")
