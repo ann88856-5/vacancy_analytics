@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 """
 Парсер для HeadHunter API
 Документация: https://github.com/hhru/api
@@ -15,7 +12,6 @@ import re
 from datetime import datetime
 from typing import List, Dict, Any
 
-# Добавляем корневую папку в путь
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from parsers.base_parser import BaseParser
@@ -33,21 +29,30 @@ class HHParser(BaseParser):
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         }
     
-    def parse(self, query: str = "Python", pages: int = 2) -> List[Dict[str, Any]]:
+    def parse(self, query: str = "Python", pages: int = 5, area: int = 1) -> List[Dict[str, Any]]:
         """
         Парсит вакансии с HeadHunter API
+        
+        Args:
+            query: поисковый запрос
+            pages: максимальное количество страниц
+            area: регион (1 - Москва, 2 - СПб, 113 - Россия)
+        
+        Returns:
+            List[Dict] - список вакансий
         """
-        print(f" Поиск вакансий по запросу: '{query}'")
+        print(f"Поиск вакансий по запросу: '{query}' в регионе {area}")
         
         all_vacancies = []
+        total_found = 0
         
         for page in range(pages):
             print(f"Загрузка страницы {page + 1}/{pages}...")
             
             params = {
                 'text': query,
-                'area': 113,  # 113 - вся Россия
-                'per_page': 20,
+                'area': area,
+                'per_page': 100,
                 'page': page
             }
             
@@ -59,37 +64,52 @@ class HHParser(BaseParser):
                     timeout=10
                 )
                 
-                print(f"Статус: {response.status_code}")
-                
-                if response.status_code != 200:
-                    print(f"Ошибка: {response.status_code}")
-                    print(response.text[:200])
+                # Проверка на ошибки HTTP
+                if response.status_code == 429:
+                    print("Слишком много запросов, жду 10 секунд...")
+                    time.sleep(10)
                     continue
+                elif response.status_code != 200:
+                    print(f"Ошибка HTTP: {response.status_code}")
+                    print(response.text)
+                    break
                 
                 data = response.json()
+                
+                # Общее количество найденных вакансий (из первого запроса)
+                if page == 0:
+                    total_found = data.get('found', 0)
+                    print(f"Всего найдено вакансий: {total_found}")
+                
                 vacancies = data.get('items', [])
-                print(f"Найдено вакансий: {len(vacancies)}")
+                print(f"Получено вакансий: {len(vacancies)}")
                 
                 for item in vacancies:
                     try:
                         parsed = self._parse_vacancy_item(item)
                         all_vacancies.append(parsed)
                     except Exception as e:
-                        print(f"Ошибка парсинга: {e}")
+                        print(f"Ошибка парсинга вакансии: {e}")
                         continue
                 
-                pages_total = data.get('pages', 0)
-                if page >= pages_total - 1:
+                if data.get('pages', 0) <= page + 1:
                     print("Достигнут конец списка")
                     break
                 
+                # Задержка, чтобы не нагружать API
                 time.sleep(0.5)
                 
-            except requests.exceptions.RequestException as e:
-                print(f"Ошибка запроса: {e}")
+            except requests.exceptions.Timeout:
+                print("Таймаут запроса")
+                continue
+            except requests.exceptions.ConnectionError:
+                print("Ошибка соединения")
+                break
+            except Exception as e:
+                print(f"Неожиданная ошибка: {e}")
                 break
         
-        print(f" Всего собрано вакансий: {len(all_vacancies)}")
+        print(f"Успешно собрано вакансий: {len(all_vacancies)} из {total_found}")
         return all_vacancies
     
     def _parse_vacancy_item(self, item: Dict[str, Any]) -> Dict[str, Any]:
