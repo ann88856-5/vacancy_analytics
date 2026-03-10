@@ -61,7 +61,7 @@ def load_skills(vacancies: List[Dict[str, Any]]) -> Dict[str, int]:
     """
     Загружает навыки в БД и возвращает словарь {название: id}
     """
-    print("🔧 Загрузка навыков...")
+    print(" Загрузка навыков...")
     
     db = SessionLocal()
     skills_dict = {}
@@ -108,8 +108,61 @@ def load_vacancies(vacancies: List[Dict[str, Any]], companies_dict: Dict[str, in
     Загружает вакансии в БД и возвращает словарь {url: id}
     """
     print(" Загрузка вакансий...")
-    # Пока заглушка
-    return {}
+    
+    db = SessionLocal()
+    vacancies_dict = {}
+    
+    try:
+        loaded_count = 0
+        skipped_count = 0
+        
+        for vacancy_data in vacancies:
+            if 'url' in vacancy_data and vacancy_data['url']:
+                existing = db.query(Vacancy).filter(Vacancy.url == vacancy_data['url']).first()
+                if existing:
+                    vacancies_dict[vacancy_data['url']] = existing.id
+                    skipped_count += 1
+                    continue
+            
+            company_id = None
+            if 'company' in vacancy_data and vacancy_data['company']:
+                company_id = companies_dict.get(vacancy_data['company'])
+            
+            new_vacancy = Vacancy(
+                title=vacancy_data.get('title', 'Без названия'),
+                description=vacancy_data.get('description', ''),
+                salary_min=vacancy_data.get('salary_min'),
+                salary_max=vacancy_data.get('salary_max'),
+                currency=vacancy_data.get('currency', 'RUB'),
+                company_id=company_id,
+                source=vacancy_data.get('source', 'unknown'),
+                url=vacancy_data.get('url'),
+                published_at=None  
+            )
+            
+            db.add(new_vacancy)
+            db.flush()  
+            
+            if 'url' in vacancy_data and vacancy_data['url']:
+                vacancies_dict[vacancy_data['url']] = new_vacancy.id
+            
+            loaded_count += 1
+            
+            if loaded_count % 10 == 0:
+                print(f"   Загружено {loaded_count} вакансий...")
+        
+        db.commit()
+        print(f" Загружено вакансий: {loaded_count}")
+        print(f" Пропущено (уже были): {skipped_count}")
+        
+    except Exception as e:
+        db.rollback()
+        print(f" Ошибка при загрузке вакансий: {e}")
+        raise
+    finally:
+        db.close()
+    
+    return vacancies_dict
 
 
 def create_vacancy_skills(vacancies: List[Dict[str, Any]], 
