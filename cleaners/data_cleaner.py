@@ -7,14 +7,61 @@ import re
 import os
 from typing import Dict, List, Any
 
+def normalize_spaces(text: str) -> str:
+    """
+    Нормализует пробелы в тексте:
+    - Добавляет пробелы между словами, написанными слитно
+    """
+    if not text:
+        return ""
+    
+    import re
+    text = re.sub(r'(?<=[a-zа-я])(?=[A-ZА-Я])', ' ', text)
+    text = re.sub(r'(?<=[a-zа-я])(?=[0-9])', ' ', text)
+    text = re.sub(r'\s+', ' ', text)
+    
+    return text.strip()
 
 def clean_salary(salary_text: str) -> Dict[str, Any]:
     """
     Преобразует текстовое описание зарплаты в числа.
     """
-    # Пока заглушка
-    print(f"Очищаю зарплату: {salary_text}")
-    return {"min": None, "max": None, "currency": None}
+    if not salary_text or salary_text == "Не указана":
+        return {"min": None, "max": None, "currency": None}
+    
+    text = salary_text.replace('\xa0', ' ').replace(' ', '')
+
+    currency = "RUB"
+    if '₽' in text or 'руб' in text.lower():
+        currency = "RUB"
+        text = re.sub(r'[₽руб]', '', text, flags=re.IGNORECASE)
+    elif '$' in text:
+        currency = "USD"
+        text = text.replace('$', '')
+    elif '€' in text:
+        currency = "EUR"
+        text = text.replace('€', '')
+    
+    numbers = re.findall(r'\d+', text)
+    numbers = [int(n) for n in numbers]
+    
+    result = {"min": None, "max": None, "currency": currency}
+    
+    if not numbers:
+        return result
+    
+    if len(numbers) == 1:
+        if 'до' in salary_text.lower() and 'от' not in salary_text.lower():
+            result["max"] = numbers[0]
+        elif 'от' in salary_text.lower() and 'до' not in salary_text.lower():
+            result["min"] = numbers[0]
+        else:
+            result["min"] = result["max"] = numbers[0]
+    else:
+        result["min"] = numbers[0]
+        result["max"] = numbers[1]
+    
+    return result
 
 
 def remove_html_tags(text: str) -> str:
@@ -37,9 +84,24 @@ def clean_vacancy(vacancy: Dict[str, Any]) -> Dict[str, Any]:
     """
     Очищает одну вакансию.
     """
-    print(f"Очищаю вакансию: {vacancy.get('title', 'Без названия')}")
-    return vacancy
-
+    cleaned = vacancy.copy()
+    
+    if 'salary' in cleaned:
+        salary_data = clean_salary(cleaned['salary'])
+        cleaned['salary_min'] = salary_data['min']
+        cleaned['salary_max'] = salary_data['max']
+        cleaned['currency'] = salary_data['currency']
+        cleaned['salary_raw'] = cleaned['salary']
+        del cleaned['salary']
+    
+    if 'description' in cleaned and cleaned['description']:
+        cleaned['description'] = remove_html_tags(cleaned['description'])
+    
+    if 'meta' in cleaned and cleaned['meta']:
+        cleaned['meta'] = remove_html_tags(cleaned['meta'])
+        cleaned['meta'] = normalize_spaces(cleaned['meta'])
+    
+    return cleaned
 
 def clean_json_file(input_path: str, output_path: str) -> int:
     """
@@ -65,7 +127,6 @@ def clean_json_file(input_path: str, output_path: str) -> int:
     
     print(f"Сохранено в: {output_path}")
     return len(cleaned_vacancies)
-
 
 if __name__ == "__main__":
     input_file = "data/raw/test_habr.json"
