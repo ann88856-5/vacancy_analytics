@@ -172,8 +172,50 @@ def create_vacancy_skills(vacancies: List[Dict[str, Any]],
     Создает связи между вакансиями и навыками
     """
     print(" Создание связей вакансия-навык...")
-    # Пока заглушка
-    pass
+    
+    db = SessionLocal()
+    
+    try:
+        connections_count = 0
+        
+        for vacancy_data in vacancies:
+            vacancy_id = None
+            if 'url' in vacancy_data and vacancy_data['url']:
+                vacancy_id = vacancies_dict.get(vacancy_data['url'])
+            
+            if not vacancy_id:
+                continue
+            
+            if 'skills' in vacancy_data and vacancy_data['skills']:
+                for skill_name in vacancy_data['skills']:
+                    skill_id = skills_dict.get(skill_name)
+                    
+                    if skill_id:
+                        existing = db.execute(
+                            vacancy_skills.select().where(
+                                (vacancy_skills.c.vacancy_id == vacancy_id) &
+                                (vacancy_skills.c.skill_id == skill_id)
+                            )
+                        ).first()
+                        
+                        if not existing:
+                            db.execute(
+                                vacancy_skills.insert().values(
+                                    vacancy_id=vacancy_id,
+                                    skill_id=skill_id
+                                )
+                            )
+                            connections_count += 1
+        
+        db.commit()
+        print(f" Создано связей вакансия-навык: {connections_count}")
+        
+    except Exception as e:
+        db.rollback()
+        print(f" Ошибка при создании связей: {e}")
+        raise
+    finally:
+        db.close()
 
 
 def load_from_json(json_path: str) -> None:
