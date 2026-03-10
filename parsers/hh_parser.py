@@ -28,6 +28,31 @@ class HHParser(BaseParser):
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         }
+
+    def extract_skills_from_description(self, description: str) -> List[str]:
+        """
+        Извлекает навыки из текста описания
+        """
+        if not description:
+            return []
+        
+        common_skills = [
+            'Python', 'Django', 'Flask', 'FastAPI', 'SQL', 'PostgreSQL',
+            'MySQL', 'Git', 'Docker', 'Linux', 'JavaScript', 'React',
+            'HTML', 'CSS', 'Redis', 'MongoDB', 'Celery', 'Pandas',
+            'NumPy', 'Scikit-learn', 'TensorFlow', 'PyTorch', 'Java',
+            'C++', 'C#', 'PHP', 'Ruby', 'Go', 'Rust', 'Kubernetes',
+            'AWS', 'Azure', 'GCP', 'REST', 'API', 'GraphQL'
+        ]
+        
+        found_skills = []
+        desc_lower = description.lower()
+        
+        for skill in common_skills:
+            if skill.lower() in desc_lower:
+                found_skills.append(skill)
+        
+        return found_skills        
     
     def parse(self, query: str = "Python", pages: int = 5, area: int = 1) -> List[Dict[str, Any]]:
         """
@@ -157,7 +182,7 @@ class HHParser(BaseParser):
             'currency': currency,
             'salary_raw': salary_raw,
             'description': description,
-            'skills': [],
+            'skills': self.extract_skills_from_description(description),
             'url': url,
             'source': 'hh',
             'published_at': published_at,
