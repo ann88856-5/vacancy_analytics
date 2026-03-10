@@ -1,0 +1,133 @@
+"""
+Модуль для загрузки очищенных данных в PostgreSQL
+"""
+
+import json
+import os
+import sys
+from typing import Dict, List, Any
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from database.connection import SessionLocal
+from database.models import Company, Vacancy, Skill, vacancy_skills
+
+
+def load_companies(vacancies: List[Dict[str, Any]]) -> Dict[str, int]:
+    """
+    Загружает компании в БД и возвращает словарь {название: id}
+    """
+    print("🏢 Загрузка компаний...")
+    
+    db = SessionLocal()
+    companies_dict = {}
+    
+    try:
+        unique_companies = set()
+        for vacancy in vacancies:
+            if 'company' in vacancy and vacancy['company']:
+                unique_companies.add(vacancy['company'])
+        
+        print(f"   Найдено уникальных компаний: {len(unique_companies)}")
+        
+        for company_name in unique_companies:
+            # Проверяем, есть ли уже такая компания
+            existing = db.query(Company).filter(Company.name == company_name).first()
+            
+            if existing:
+                companies_dict[company_name] = existing.id
+                print(f"   ⏩ Компания уже существует: {company_name} (id: {existing.id})")
+            else:
+                new_company = Company(name=company_name)
+                db.add(new_company)
+                db.flush() 
+                companies_dict[company_name] = new_company.id
+                print(f"   ✅ Добавлена компания: {company_name} (id: {new_company.id})")
+        
+        db.commit()
+        print(f"✅ Загружено компаний: {len(companies_dict)}")
+        
+    except Exception as e:
+        db.rollback()
+        print(f"❌ Ошибка при загрузке компаний: {e}")
+        raise
+    finally:
+        db.close()
+    
+    return companies_dict
+
+
+def load_skills(vacancies: List[Dict[str, Any]]) -> Dict[str, int]:
+    """
+    Загружает навыки в БД и возвращает словарь {название: id}
+    """
+    print("🔧 Загрузка навыков...")
+    # Пока заглушка
+    return {}
+
+
+def load_vacancies(vacancies: List[Dict[str, Any]], companies_dict: Dict[str, int]) -> Dict[str, int]:
+    """
+    Загружает вакансии в БД и возвращает словарь {url: id}
+    """
+    print("💼 Загрузка вакансий...")
+    # Пока заглушка
+    return {}
+
+
+def create_vacancy_skills(vacancies: List[Dict[str, Any]], 
+                          vacancies_dict: Dict[str, int], 
+                          skills_dict: Dict[str, int]) -> None:
+    """
+    Создает связи между вакансиями и навыками
+    """
+    print("🔗 Создание связей вакансия-навык...")
+    # Пока заглушка
+    pass
+
+
+def load_from_json(json_path: str) -> None:
+    """
+    Загружает данные из JSON файла в БД
+    """
+    print(f"📂 Читаю файл: {json_path}")
+    
+    with open(json_path, 'r', encoding='utf-8') as f:
+        vacancies = json.load(f)
+    
+    print(f"📊 Найдено вакансий: {len(vacancies)}")
+
+    db = SessionLocal()
+    
+    try:
+        companies_dict = load_companies(vacancies)
+        
+        skills_dict = load_skills(vacancies)
+        
+        vacancies_dict = load_vacancies(vacancies, companies_dict)
+        
+        create_vacancy_skills(vacancies, vacancies_dict, skills_dict)
+        
+        db.commit()
+        print("✅ Все данные успешно загружены в БД!")
+        
+    except Exception as e:
+        db.rollback()
+        print(f"❌ Ошибка при загрузке: {e}")
+        raise
+    finally:
+        db.close()
+
+
+if __name__ == "__main__":
+    json_file = "data/processed/habr_clean.json"
+    
+    if os.path.exists(json_file):
+        load_from_json(json_file)
+    else:
+        print(f"❌ Файл {json_file} не найден")
+        import glob
+        json_files = glob.glob("data/processed/*.json")
+        if json_files:
+            print(f"Найден альтернативный файл: {json_files[0]}")
+            load_from_json(json_files[0])
