@@ -93,6 +93,9 @@ def clean_vacancy(vacancy: Dict[str, Any]) -> Dict[str, Any]:
         cleaned['currency'] = salary_data['currency']
         cleaned['salary_raw'] = cleaned['salary']
         del cleaned['salary']
+        
+        if cleaned['salary_raw']:
+            cleaned['salary_raw'] = normalize_spaces(cleaned['salary_raw'])
     
     if 'description' in cleaned and cleaned['description']:
         cleaned['description'] = remove_html_tags(cleaned['description'])
