@@ -1,0 +1,202 @@
+[
+  {
+    "id": 33,
+    "company_name": "СБЕР",
+    "vacancies_count": 19,
+    "avg_salary": 65000.0,
+    "min_salary": 50000.0,
+    "max_salary": 80000.0,
+    "vacancies_with_salary": 1,
+    "industry": "Финансы / Банки"
+  },
+  {
+    "id": 97,
+    "company_name": "ИЦ АЙ-ТЕКО",
+    "vacancies_count": 6,
+    "avg_salary": 225000.0,
+    "min_salary": 200000.0,
+    "max_salary": 270000.0,
+    "vacancies_with_salary": 1,
+    "industry": "Другое"
+  },
+  {
+    "id": 62,
+    "company_name": "Ozon",
+    "vacancies_count": 5,
+    "avg_salary": NaN,
+    "min_salary": NaN,
+    "max_salary": NaN,
+    "vacancies_with_salary": 0,
+    "industry": "Ритейл / Торговля"
+  },
+  {
+    "id": 12,
+    "company_name": "RedLab​4.61​",
+    "vacancies_count": 4,
+    "avg_salary": 281875.0,
+    "min_salary": 166000.0,
+    "max_salary": 450000.0,
+    "vacancies_with_salary": 4,
+    "industry": "IT / Технологии"
+  },
+  {
+    "id": 42,
+    "company_name": "X5 Tech",
+    "vacancies_count": 4,
+    "avg_salary": NaN,
+    "min_salary": NaN,
+    "max_salary": NaN,
+    "vacancies_with_salary": 0,
+    "industry": "IT / Технологии"
+  },
+  {
+    "id": 40,
+    "company_name": "БЮРО 1440",
+    "vacancies_count": 3,
+    "avg_salary": NaN,
+    "min_salary": NaN,
+    "max_salary": NaN,
+    "vacancies_with_salary": 0,
+    "industry": "Другое"
+  },
+  {
+    "id": 168,
+    "company_name": "Арнест ЮниРусь",
+    "vacancies_count": 3,
+    "avg_salary": NaN,
+    "min_salary": NaN,
+    "max_salary": NaN,
+    "vacancies_with_salary": 0,
+    "industry": "Другое"
+  },
+  {
+    "id": 150,
+    "company_name": "ПИТОН",
+    "vacancies_count": 3,
+    "avg_salary": 245000.0,
+    "min_salary": 120000.0,
+    "max_salary": 450000.0,
+    "vacancies_with_salary": 3,
+    "industry": "Другое"
+  },
+  {
+    "id": 167,
+    "company_name": "T2",
+    "vacancies_count": 2,
+    "avg_salary": NaN,
+    "min_salary": NaN,
+    "max_salary": NaN,
+    "vacancies_with_salary": 0,
+    "industry": "Другое"
+  },
+  {
+    "id": 124,
+    "company_name": "РТЛабс",
+    "vacancies_count": 2,
+    "avg_salary": NaN,
+    "min_salary": NaN,
+    "max_salary": NaN,
+    "vacancies_with_salary": 0,
+    "industry": "Другое"
+  },
+  {
+    "id": 10,
+    "company_name": "Сбер​3.64​",
+    "vacancies_count": 2,
+    "avg_salary": 380000.0,
+    "min_salary": 300000.0,
+    "max_salary": 453000.0,
+    "vacancies_with_salary": 2,
+    "industry": "Финансы / Банки"
+  },
+  {
+    "id": 82,
+    "company_name": "СП Солюшен",
+    "vacancies_count": 2,
+    "avg_salary": NaN,
+    "min_salary": NaN,
+    "max_salary": NaN,
+    "vacancies_with_salary": 0,
+    "industry": "Другое"
+  },
+  {
+    "id": 14,
+    "company_name": "ЛАНИТ​4.77​",
+    "vacancies_count": 2,
+    "avg_salary": 232500.0,
+    "min_salary": 168000.0,
+    "max_salary": 297000.0,
+    "vacancies_with_salary": 1,
+    "industry": "Другое"
+  },
+  {
+    "id": 74,
+    "company_name": "amoCRM",
+    "vacancies_count": 2,
+    "avg_salary": NaN,
+    "min_salary": NaN,
+    "max_salary": 200000.0,
+    "vacancies_with_salary": 0,
+    "industry": "Другое"
+  },
+  {
+    "id": 135,
+    "company_name": "РУСАЛ",
+    "vacancies_count": 2,
+    "avg_salary": NaN,
+    "min_salary": NaN,
+    "max_salary": NaN,
+    "vacancies_with_salary": 0,
+    "industry": "Другое"
+  },
+  {
+    "id": 119,
+    "company_name": "Главгосэкспертиза России",
+    "vacancies_count": 2,
+    "avg_salary": 132500.0,
+    "min_salary": 130000.0,
+    "max_salary": 135000.0,
+    "vacancies_with_salary": 1,
+    "industry": "Госсектор / Оборона"
+  },
+  {
+    "id": 46,
+    "company_name": "MillionAgents",
+    "vacancies_count": 2,
+    "avg_salary": 110000.0,
+    "min_salary": 70000.0,
+    "max_salary": 120000.0,
+    "vacancies_with_salary": 2,
+    "industry": "Другое"
+  },
+  {
+    "id": 80,
+    "company_name": "Леста Игры",
+    "vacancies_count": 2,
+    "avg_salary": NaN,
+    "min_salary": NaN,
+    "max_salary": NaN,
+    "vacancies_with_salary": 0,
+    "industry": "Другое"
+  },
+  {
+    "id": 130,
+    "company_name": "Страховая компания Сбербанк страхование",
+    "vacancies_count": 2,
+    "avg_salary": NaN,
+    "min_salary": NaN,
+    "max_salary": NaN,
+    "vacancies_with_salary": 0,
+    "industry": "Финансы / Банки"
+  },
+  {
+    "id": 34,
+    "company_name": "Московский метрополитен",
+    "vacancies_count": 2,
+    "avg_salary": NaN,
+    "min_salary": NaN,
+    "max_salary": NaN,
+    "vacancies_with_salary": 0,
+    "industry": "Другое"
+  }
+]

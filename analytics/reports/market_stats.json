@@ -1,0 +1,10 @@
+{
+  "total_companies": 194,
+  "active_companies": 193,
+  "total_vacancies": 247,
+  "avg_vacancies_per_company": 1.27,
+  "companies_with_salary_data": 52,
+  "avg_salary_all": 183245.19,
+  "max_salary_all": 550000.0,
+  "min_salary_all": 1500.0
+}

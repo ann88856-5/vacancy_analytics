@@ -1,0 +1,44 @@
+[
+  {
+    "industry": "Другое",
+    "companies_count": 143,
+    "total_vacancies": 166,
+    "avg_salary_by_industry": 197419.0
+  },
+  {
+    "industry": "IT / Технологии",
+    "companies_count": 31,
+    "total_vacancies": 36,
+    "avg_salary_by_industry": 135625.0
+  },
+  {
+    "industry": "Финансы / Банки",
+    "companies_count": 8,
+    "total_vacancies": 28,
+    "avg_salary_by_industry": 204500.0
+  },
+  {
+    "industry": "Ритейл / Торговля",
+    "companies_count": 5,
+    "total_vacancies": 9,
+    "avg_salary_by_industry": 238500.0
+  },
+  {
+    "industry": "Госсектор / Оборона",
+    "companies_count": 5,
+    "total_vacancies": 6,
+    "avg_salary_by_industry": 132500.0
+  },
+  {
+    "industry": "Консалтинг / Аутсорсинг",
+    "companies_count": 1,
+    "total_vacancies": 1,
+    "avg_salary_by_industry": NaN
+  },
+  {
+    "industry": "Медиа / Образование",
+    "companies_count": 1,
+    "total_vacancies": 1,
+    "avg_salary_by_industry": NaN
+  }
+]
