@@ -1,1 +1,122 @@
-[]
+[
+  {
+    "id": 1,
+    "name": "Python",
+    "category": null,
+    "count": 235
+  },
+  {
+    "id": 6,
+    "name": "Go",
+    "category": null,
+    "count": 61
+  },
+  {
+    "id": 7,
+    "name": "API",
+    "category": null,
+    "count": 54
+  },
+  {
+    "id": 2,
+    "name": "Django",
+    "category": null,
+    "count": 46
+  },
+  {
+    "id": 9,
+    "name": "SQL",
+    "category": null,
+    "count": 44
+  },
+  {
+    "id": 3,
+    "name": "FastAPI",
+    "category": null,
+    "count": 40
+  },
+  {
+    "id": 13,
+    "name": "REST",
+    "category": null,
+    "count": 27
+  },
+  {
+    "id": 14,
+    "name": "PostgreSQL",
+    "category": null,
+    "count": 26
+  },
+  {
+    "id": 31,
+    "name": "AI",
+    "category": "analytics",
+    "count": 17
+  },
+  {
+    "id": 8,
+    "name": "Flask",
+    "category": null,
+    "count": 17
+  },
+  {
+    "id": 12,
+    "name": "Git",
+    "category": null,
+    "count": 16
+  },
+  {
+    "id": 32,
+    "name": "ML",
+    "category": "analytics",
+    "count": 13
+  },
+  {
+    "id": 15,
+    "name": "Docker",
+    "category": null,
+    "count": 11
+  },
+  {
+    "id": 11,
+    "name": "Java",
+    "category": null,
+    "count": 11
+  },
+  {
+    "id": 10,
+    "name": "Linux",
+    "category": null,
+    "count": 11
+  },
+  {
+    "id": 33,
+    "name": "REST API",
+    "category": "tool",
+    "count": 10
+  },
+  {
+    "id": 4,
+    "name": "Pandas",
+    "category": null,
+    "count": 8
+  },
+  {
+    "id": 16,
+    "name": "Redis",
+    "category": null,
+    "count": 8
+  },
+  {
+    "id": 18,
+    "name": "JavaScript",
+    "category": null,
+    "count": 5
+  },
+  {
+    "id": 17,
+    "name": "Celery",
+    "category": null,
+    "count": 5
+  }
+]

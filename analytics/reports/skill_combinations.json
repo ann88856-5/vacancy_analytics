@@ -1,1 +1,52 @@
-[]
+[
+  {
+    "skill1": "Go",
+    "skill2": "Python",
+    "count": 61
+  },
+  {
+    "skill1": "API",
+    "skill2": "Python",
+    "count": 54
+  },
+  {
+    "skill1": "Django",
+    "skill2": "Python",
+    "count": 46
+  },
+  {
+    "skill1": "Python",
+    "skill2": "SQL",
+    "count": 44
+  },
+  {
+    "skill1": "Django",
+    "skill2": "Go",
+    "count": 43
+  },
+  {
+    "skill1": "FastAPI",
+    "skill2": "Python",
+    "count": 40
+  },
+  {
+    "skill1": "API",
+    "skill2": "FastAPI",
+    "count": 39
+  },
+  {
+    "skill1": "API",
+    "skill2": "Go",
+    "count": 31
+  },
+  {
+    "skill1": "Python",
+    "skill2": "REST",
+    "count": 27
+  },
+  {
+    "skill1": "API",
+    "skill2": "Django",
+    "count": 26
+  }
+]

@@ -1,1 +1,21 @@
 id,name,category,count
+1,Python,,235
+6,Go,,61
+7,API,,54
+2,Django,,46
+9,SQL,,44
+3,FastAPI,,40
+13,REST,,27
+14,PostgreSQL,,26
+31,AI,analytics,17
+8,Flask,,17
+12,Git,,16
+32,ML,analytics,13
+15,Docker,,11
+11,Java,,11
+10,Linux,,11
+33,REST API,tool,10
+4,Pandas,,8
+16,Redis,,8
+18,JavaScript,,5
+17,Celery,,5
