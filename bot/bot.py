@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 import sys
 import os
 import requests
@@ -6,8 +9,6 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import io
 from dotenv import load_dotenv
-from telegram import Update
-from telegram.ext import Application, CommandHandler
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler
 
@@ -20,13 +21,16 @@ from jokes import get_random_joke
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 API_URL = "http://localhost:8000"
 
+user_pagination = {}
+
 
 async def start(update: Update, _):
     user = update.effective_user
     await update.message.reply_text(
         f"Привет, {user.first_name}!\n\n"
         "Я бот для анализа вакансий. Я умею:\n\n"
-        "/vacancies - список вакансий\n"
+        "/vacancies - список вакансий с пагинацией\n"
+        "/vacancies_filter - список вакансий с кнопками фильтров\n"
         "/skills - топ-10 навыков\n"
         "/stats - общая статистика\n"
         "/companies - список компаний\n"
@@ -34,90 +38,87 @@ async def start(update: Update, _):
         "/skills_chart - график топ-10 навыков\n"
         "/salary_chart - гистограмма зарплат\n"
         "/companies_chart - график топ-10 компаний\n"
-        "/vacancies_filter - список вакансий с кнопками фильтров\n"
         "/help - помощь"
     )
 
-async def vacancies_with_filters(update: Update, _):
-    """Показывает кнопки для выбора фильтра"""
-    keyboard = [
-        [InlineKeyboardButton("По компании", callback_data='filter_company')],
-        [InlineKeyboardButton("По навыку", callback_data='filter_skill')],
-        [InlineKeyboardButton("По зарплате", callback_data='filter_salary')],
-        [InlineKeyboardButton("Без фильтра", callback_data='filter_none')]
-    ]
+
+async def help_command(update: Update, _):
+    await update.message.reply_text(
+        "Доступные команды:\n\n"
+        "/vacancies - список вакансий с пагинацией\n"
+        "  Пример: /vacancies?company=Сбер\n"
+        "  Пример: /vacancies?skill=Python\n"
+        "  Пример: /vacancies?salary_min=200000\n"
+        "/vacancies_filter - список вакансий с кнопками фильтров\n"
+        "/skills - топ-10 навыков\n"
+        "/stats - общая статистика\n"
+        "/companies - список компаний\n"
+        "/joke - случайный IT-анекдот\n"
+        "/skills_chart - график топ-10 навыков\n"
+        "/salary_chart - гистограмма зарплат\n"
+        "/companies_chart - график топ-10 компаний\n"
+        "/help - эта справка"
+    )
+
+
+async def send_page(chat_id, original_message=None, update=None, direction=0):
+    data = user_pagination.get(chat_id)
+    if not data:
+        return
+    
+    vacancies = data['vacancies']
+    current_page = data['page']
+    total_pages = (len(vacancies) + 4) // 5
+    
+    new_page = current_page + direction
+    if new_page < 0 or new_page >= total_pages:
+        return
+    
+    data['page'] = new_page
+    current_page = new_page
+    
+    start_idx = current_page * 5
+    end_idx = start_idx + 5
+    page_vacancies = vacancies[start_idx:end_idx]
+    
+    message = f"Вакансии (страница {current_page + 1} из {total_pages})\n\n"
+    
+    for v in page_vacancies:
+        company_name = v.get('company_name', 'Не указана')
+        salary = ""
+        if v.get('salary_min') and v.get('salary_max'):
+            salary = f" {v['salary_min']} - {v['salary_max']} {v.get('currency', '')}\n"
+        elif v.get('salary_min'):
+            salary = f" от {v['salary_min']} {v.get('currency', '')}\n"
+        elif v.get('salary_max'):
+            salary = f" до {v['salary_max']} {v.get('currency', '')}\n"
+        
+        message += f"- {v['title']}\n"
+        message += f"  Компания: {company_name}\n"
+        message += salary
+        message += f"  Ссылка: {v['url']}\n\n"
+    
+    keyboard = []
+    nav_buttons = []
+    
+    if current_page > 0:
+        nav_buttons.append(InlineKeyboardButton("Назад", callback_data=f"pagination_{chat_id}_prev"))
+    if current_page < total_pages - 1:
+        nav_buttons.append(InlineKeyboardButton("Вперёд", callback_data=f"pagination_{chat_id}_next"))
+    
+    if nav_buttons:
+        keyboard.append(nav_buttons)
+    
+    keyboard.append([InlineKeyboardButton("Закрыть", callback_data=f"pagination_{chat_id}_close")])
     reply_markup = InlineKeyboardMarkup(keyboard)
-    await update.message.reply_text("🔍 Выберите тип фильтра:", reply_markup=reply_markup)
+    
+    if original_message:
+        await original_message.edit_text(message, reply_markup=reply_markup)
+    else:
+        await update.message.reply_text(message, reply_markup=reply_markup)
 
 
-async def filter_button_handler(update: Update, _):
-    """Обрабатывает нажатия на кнопки фильтров"""
-    query = update.callback_query
-    await query.answer()
-    
-    if query.data == 'filter_company':
-        keyboard = [
-            [InlineKeyboardButton("Сбер", callback_data='company_Сбер')],
-            [InlineKeyboardButton("Яндекс", callback_data='company_Яндекс')],
-            [InlineKeyboardButton("Ozon", callback_data='company_Ozon')],
-            [InlineKeyboardButton("VK", callback_data='company_VK')],
-            [InlineKeyboardButton("Отмена", callback_data='cancel')]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        await query.edit_message_text("Выберите компанию:", reply_markup=reply_markup)
-    
-    elif query.data == 'filter_skill':
-        keyboard = [
-            [InlineKeyboardButton("Python", callback_data='skill_Python')],
-            [InlineKeyboardButton("SQL", callback_data='skill_SQL')],
-            [InlineKeyboardButton("Django", callback_data='skill_Django')],
-            [InlineKeyboardButton("FastAPI", callback_data='skill_FastAPI')],
-            [InlineKeyboardButton("Go", callback_data='skill_Go')],
-            [InlineKeyboardButton("Отмена", callback_data='cancel')]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        await query.edit_message_text("Выберите навык:", reply_markup=reply_markup)
-    
-    elif query.data == 'filter_salary':
-        keyboard = [
-            [InlineKeyboardButton("до 100 000 ₽", callback_data='salary_0_100000')],
-            [InlineKeyboardButton("100 000 - 200 000 ₽", callback_data='salary_100000_200000')],
-            [InlineKeyboardButton("200 000 - 300 000 ₽", callback_data='salary_200000_300000')],
-            [InlineKeyboardButton("от 300 000 ₽", callback_data='salary_300000')],
-            [InlineKeyboardButton("Отмена", callback_data='cancel')]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        await query.edit_message_text("Выберите диапазон зарплат:", reply_markup=reply_markup)
-    
-    elif query.data == 'filter_none':
-        await query.edit_message_text("Отправляю вакансии без фильтра...")
-        await send_vacancies_by_params(update, {}, query.message)
-    
-    elif query.data == 'cancel':
-        await query.edit_message_text("Фильтр отменён. Используйте /vacancies для нового поиска.")
-    
-    elif query.data.startswith('company_'):
-        company = query.data.replace('company_', '')
-        await query.edit_message_text(f"Ищу вакансии компании {company}...")
-        await send_vacancies_by_params(update, {'company': company}, query.message)
-    
-    elif query.data.startswith('skill_'):
-        skill = query.data.replace('skill_', '')
-        await query.edit_message_text(f"Ищу вакансии с навыком {skill}...")
-        await send_vacancies_by_params(update, {'skill': skill}, query.message)
-    
-    elif query.data.startswith('salary_'):
-        if query.data == 'salary_300000':
-            await send_vacancies_by_params(update, {'salary_min': 300000}, query.message)
-        else:
-            parts = query.data.replace('salary_', '').split('_')
-            min_sal = int(parts[0])
-            max_sal = int(parts[1])
-            await send_vacancies_by_params(update, {'salary_min': min_sal, 'salary_max': max_sal}, query.message)
-
-
-async def send_vacancies_by_params(update: Update, params: dict, original_message=None):
-    """Отправляет вакансии с заданными параметрами"""
+async def send_vacancies_by_params(update, params, original_message=None, chat_id=None):
     try:
         response = requests.get(f"{API_URL}/vacancies", params=params, timeout=10)
         response.raise_for_status()
@@ -125,37 +126,32 @@ async def send_vacancies_by_params(update: Update, params: dict, original_messag
         
         if not vacancies:
             text = "Вакансий не найдено"
-        else:
-            message = "*Вакансии:*\n\n"
-            for v in vacancies[:5]:
-                company_name = v.get('company_name', 'Не указана')
-                salary = ""
-                if v.get('salary_min') and v.get('salary_max'):
-                    salary = f" 💰 {v['salary_min']} - {v['salary_max']} {v.get('currency', '')}\n"
-                elif v.get('salary_min'):
-                    salary = f" 💰 от {v['salary_min']} {v.get('currency', '')}\n"
-                elif v.get('salary_max'):
-                    salary = f" 💰 до {v['salary_max']} {v.get('currency', '')}\n"
-                
-                message += f"• *{v['title']}*\n"
-                message += f"  Компания: {company_name}\n"
-                message += salary
-                message += f"  [Ссылка]({v['url']})\n\n"
-            
-            if len(vacancies) > 5:
-                message += f"_Показано 5 из {len(vacancies)} вакансий_"
+            if original_message:
+                await original_message.reply_text(text)
+            else:
+                await update.message.reply_text(text)
+            return
         
-        if original_message:
-            await original_message.reply_text(message, parse_mode='Markdown')
-        else:
-            await update.message.reply_text(message, parse_mode='Markdown')
+        if chat_id is None:
+            if original_message:
+                chat_id = original_message.chat_id
+            else:
+                chat_id = update.effective_chat.id
+        
+        user_pagination[chat_id] = {
+            'vacancies': vacancies,
+            'page': 0,
+            'params': params
+        }
+        
+        await send_page(chat_id, original_message, update)
             
     except requests.exceptions.RequestException as e:
         error_text = f"Ошибка при получении данных: {e}"
         if original_message:
             await original_message.reply_text(error_text)
         else:
-            await update.message.reply_text(error_text)    
+            await update.message.reply_text(error_text)
 
 
 async def get_vacancies(update: Update, _):
@@ -181,29 +177,119 @@ async def get_vacancies(update: Update, _):
             await update.message.reply_text("Вакансий не найдено")
             return
 
-        message = "*Вакансии:*\n\n"
-        for v in vacancies[:5]:
-            company_name = v.get('company_name', 'Не указана')
-            salary = ""
-            if v.get('salary_min') and v.get('salary_max'):
-                salary = f" {v['salary_min']} - {v['salary_max']} {v.get('currency', '')}\n"
-            elif v.get('salary_min'):
-                salary = f" от {v['salary_min']} {v.get('currency', '')}\n"
-            elif v.get('salary_max'):
-                salary = f" до {v['salary_max']} {v.get('currency', '')}\n"
-
-            message += f"• *{v['title']}*\n"
-            message += f"  Компания: {company_name}\n"
-            message += salary
-            message += f"  [Ссылка]({v['url']})\n\n"
-
-        if len(vacancies) > 5:
-            message += f"_Показано 5 из {len(vacancies)} вакансий_"
-
-        await update.message.reply_text(message, parse_mode='Markdown')
-
+        chat_id = update.effective_chat.id
+        
+        user_pagination[chat_id] = {
+            'vacancies': vacancies,
+            'page': 0,
+            'params': params
+        }
+        
+        await send_page(chat_id, update=update)
+            
     except requests.exceptions.RequestException as e:
         await update.message.reply_text(f"Ошибка при получении данных: {e}")
+
+
+async def vacancies_with_filters(update: Update, _):
+    keyboard = [
+        [InlineKeyboardButton("По компании", callback_data='filter_company')],
+        [InlineKeyboardButton("По навыку", callback_data='filter_skill')],
+        [InlineKeyboardButton("По зарплате", callback_data='filter_salary')],
+        [InlineKeyboardButton("Без фильтра", callback_data='filter_none')],
+        [InlineKeyboardButton("Отмена", callback_data='filter_cancel')]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await update.message.reply_text("Выберите тип фильтра:", reply_markup=reply_markup)
+
+
+async def universal_callback_handler(update: Update, _):
+    query = update.callback_query
+    await query.answer()
+    
+    data = query.data
+    chat_id = query.message.chat_id
+    
+    # Обработка пагинации
+    if data.startswith('pagination_'):
+        if data.endswith('_prev'):
+            await send_page(chat_id, original_message=query.message, direction=-1)
+        elif data.endswith('_next'):
+            await send_page(chat_id, original_message=query.message, direction=1)
+        elif data.endswith('_close'):
+            await query.message.delete()
+            if chat_id in user_pagination:
+                del user_pagination[chat_id]
+        return
+    
+    # Обработка фильтров (оставляем как есть, без отладки)
+    if data == 'filter_company':
+        keyboard = [
+            [InlineKeyboardButton("Сбер", callback_data='company_Сбер')],
+            [InlineKeyboardButton("Яндекс", callback_data='company_Яндекс')],
+            [InlineKeyboardButton("Ozon", callback_data='company_Ozon')],
+            [InlineKeyboardButton("VK", callback_data='company_VK')],
+            [InlineKeyboardButton("Отмена", callback_data='cancel')]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await query.edit_message_text("Выберите компанию:", reply_markup=reply_markup)
+        return
+    
+    if data == 'filter_skill':
+        keyboard = [
+            [InlineKeyboardButton("Python", callback_data='skill_Python')],
+            [InlineKeyboardButton("SQL", callback_data='skill_SQL')],
+            [InlineKeyboardButton("Django", callback_data='skill_Django')],
+            [InlineKeyboardButton("FastAPI", callback_data='skill_FastAPI')],
+            [InlineKeyboardButton("Go", callback_data='skill_Go')],
+            [InlineKeyboardButton("Отмена", callback_data='cancel')]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await query.edit_message_text("Выберите навык:", reply_markup=reply_markup)
+        return
+    
+    if data == 'filter_salary':
+        keyboard = [
+            [InlineKeyboardButton("до 100 000", callback_data='salary_0_100000')],
+            [InlineKeyboardButton("100 000 - 200 000", callback_data='salary_100000_200000')],
+            [InlineKeyboardButton("200 000 - 300 000", callback_data='salary_200000_300000')],
+            [InlineKeyboardButton("от 300 000", callback_data='salary_300000')],
+            [InlineKeyboardButton("Отмена", callback_data='cancel')]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await query.edit_message_text("Выберите диапазон зарплат:", reply_markup=reply_markup)
+        return
+    
+    if data == 'filter_none':
+        await query.edit_message_text("Загружаю вакансии...")
+        await send_vacancies_by_params(update, {}, original_message=query.message, chat_id=chat_id)
+        return
+    
+    if data == 'filter_cancel' or data == 'cancel':
+        await query.edit_message_text("Отменено.")
+        return
+    
+    if data.startswith('company_'):
+        company = data.replace('company_', '')
+        await query.edit_message_text(f"Ищу вакансии компании {company}...")
+        await send_vacancies_by_params(update, {'company': company}, original_message=query.message, chat_id=chat_id)
+        return
+    
+    if data.startswith('skill_'):
+        skill = data.replace('skill_', '')
+        await query.edit_message_text(f"Ищу вакансии с навыком {skill}...")
+        await send_vacancies_by_params(update, {'skill': skill}, original_message=query.message, chat_id=chat_id)
+        return
+    
+    if data.startswith('salary_'):
+        if data == 'salary_300000':
+            await send_vacancies_by_params(update, {'salary_min': 300000}, original_message=query.message, chat_id=chat_id)
+        else:
+            parts = data.replace('salary_', '').split('_')
+            min_sal = int(parts[0])
+            max_sal = int(parts[1])
+            await send_vacancies_by_params(update, {'salary_min': min_sal, 'salary_max': max_sal}, original_message=query.message, chat_id=chat_id)
+        return
 
 
 async def get_skills(update: Update, _):
@@ -216,11 +302,11 @@ async def get_skills(update: Update, _):
             await update.message.reply_text("Навыки не найдены")
             return
 
-        message = "*Топ-10 навыков:*\n\n"
+        message = "Топ-10 навыков:\n\n"
         for i, skill in enumerate(skills[:10], 1):
             message += f"{i}. {skill['name']} — {skill['count']} вакансий\n"
 
-        await update.message.reply_text(message, parse_mode='Markdown')
+        await update.message.reply_text(message)
 
     except requests.exceptions.RequestException as e:
         await update.message.reply_text(f"Ошибка при получении данных: {e}")
@@ -233,16 +319,16 @@ async def get_stats(update: Update, _):
         stats = response.json()
 
         message = (
-            "*Общая статистика:*\n\n"
-            f"• Вакансий: {stats['total_vacancies']}\n"
-            f"• Компаний: {stats['total_companies']}\n"
-            f"• Навыков: {stats['total_skills']}\n"
-            f"• Средняя зарплата: {stats['avg_salary']:,.0f} ₽\n"
-            f"• Топ навык: {stats['top_skill']}\n\n"
-            f"*Анекдот в подарок:*\n{get_random_joke()}"
+            "Общая статистика:\n\n"
+            f"Вакансий: {stats['total_vacancies']}\n"
+            f"Компаний: {stats['total_companies']}\n"
+            f"Навыков: {stats['total_skills']}\n"
+            f"Средняя зарплата: {stats['avg_salary']:,.0f} ₽\n"
+            f"Топ навык: {stats['top_skill']}\n\n"
+            f"Анекдот в подарок:\n{get_random_joke()}"
         )
 
-        await update.message.reply_text(message, parse_mode='Markdown')
+        await update.message.reply_text(message)
 
     except requests.exceptions.RequestException as e:
         await update.message.reply_text(f"Ошибка при получении данных: {e}")
@@ -258,14 +344,14 @@ async def get_companies(update: Update, _):
             await update.message.reply_text("Компании не найдены")
             return
 
-        message = "*Топ-10 компаний:*\n\n"
+        message = "Топ-10 компаний:\n\n"
         for i, company in enumerate(companies[:10], 1):
             vacancies_count = company.get('vacancies_count', 0)
             avg_salary = company.get('avg_salary')
             salary_str = f" — {int(avg_salary):,.0f} ₽" if avg_salary else ""
             message += f"{i}. {company['name']} — {vacancies_count} вакансий{salary_str}\n"
 
-        await update.message.reply_text(message, parse_mode='Markdown')
+        await update.message.reply_text(message)
 
     except requests.exceptions.RequestException as e:
         await update.message.reply_text(f"Ошибка при получении данных: {e}")
@@ -276,7 +362,6 @@ async def joke(update: Update, _):
 
 
 async def skills_chart(update: Update, _):
-    """Отправляет график топ-10 навыков"""
     try:
         response = requests.get(f"{API_URL}/skills/top?limit=10", timeout=10)
         response.raise_for_status()
@@ -296,8 +381,7 @@ async def skills_chart(update: Update, _):
         plt.gca().invert_yaxis()
 
         for bar, count in zip(bars, counts):
-            plt.text(bar.get_width() + 1, bar.get_y() + bar.get_height()/2,
-                     str(count), va='center')
+            plt.text(bar.get_width() + 1, bar.get_y() + bar.get_height()/2, str(count), va='center')
 
         plt.tight_layout()
 
@@ -313,7 +397,6 @@ async def skills_chart(update: Update, _):
 
 
 async def salary_chart(update: Update, _):
-    """Отправляет гистограмму распределения зарплат"""
     try:
         response = requests.get(f"{API_URL}/vacancies", timeout=10)
         response.raise_for_status()
@@ -348,7 +431,6 @@ async def salary_chart(update: Update, _):
 
 
 async def companies_chart(update: Update, _):
-    """Отправляет график топ-10 компаний"""
     try:
         response = requests.get(f"{API_URL}/companies?limit=10", timeout=10)
         response.raise_for_status()
@@ -368,8 +450,7 @@ async def companies_chart(update: Update, _):
         plt.gca().invert_yaxis()
 
         for bar, count in zip(bars, counts):
-            plt.text(bar.get_width() + 0.5, bar.get_y() + bar.get_height()/2,
-                     str(count), va='center')
+            plt.text(bar.get_width() + 0.5, bar.get_y() + bar.get_height()/2, str(count), va='center')
 
         plt.tight_layout()
 
@@ -383,24 +464,6 @@ async def companies_chart(update: Update, _):
     except requests.exceptions.RequestException as e:
         await update.message.reply_text(f"Ошибка при получении данных: {e}")
 
-async def help_command(update: Update, _):
-    await update.message.reply_text(
-        "Доступные команды:\n\n"
-        "/vacancies - список вакансий\n"
-        "  Пример: /vacancies?company=Сбер\n"
-        "  Пример: /vacancies?skill=Python\n"
-        "  Пример: /vacancies?salary_min=200000\n"
-        "/skills - топ-10 навыков\n"
-        "/stats - общая статистика\n"
-        "/companies - список компаний\n"
-        "/joke - случайный IT-анекдот\n"
-        "/skills_chart - график топ-10 навыков\n"
-        "/salary_chart - гистограмма зарплат\n"
-        "/companies_chart - график топ-10 компаний\n"
-        "/vacancies_filter - список вакансий с кнопками фильтров\n"
-        "/help - эта справка"
-    )
-
 
 def main():
     application = Application.builder().token(TOKEN).build()
@@ -408,22 +471,20 @@ def main():
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("help", help_command))
     application.add_handler(CommandHandler("vacancies", get_vacancies))
-    application.add_handler(CommandHandler("vacancies_filter", vacancies_with_filters))  
+    application.add_handler(CommandHandler("vacancies_filter", vacancies_with_filters))
     application.add_handler(CommandHandler("skills", get_skills))
     application.add_handler(CommandHandler("stats", get_stats))
     application.add_handler(CommandHandler("companies", get_companies))
     application.add_handler(CommandHandler("joke", joke))
-    
-    # Команды для графиков
+
     application.add_handler(CommandHandler("skills_chart", skills_chart))
     application.add_handler(CommandHandler("salary_chart", salary_chart))
     application.add_handler(CommandHandler("companies_chart", companies_chart))
-    
-    # Обработчик кнопок фильтров
-    application.add_handler(CallbackQueryHandler(filter_button_handler))
-    
+
+    application.add_handler(CallbackQueryHandler(universal_callback_handler))
+
     print("Бот запущен...")
-    application.run_polling()
+    application.run_polling() 
 
 
 if __name__ == "__main__":
