@@ -7,3 +7,5 @@ pandas==2.2.0
 fastapi==0.135.3
 uvicorn==0.43.0
 python-telegram-bot==20.7
+python-telegram-bot==20.7
+requests==2.31.0
