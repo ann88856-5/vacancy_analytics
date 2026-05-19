@@ -538,7 +538,69 @@ async def company_stats(update: Update, _):
         
     except requests.exceptions.RequestException as e:
         await update.message.reply_text(f"Ошибка при получении данных: {e}")
+
+
+async def top_companies(update: Update, _):
+    """Показывает топ компаний по навыку"""
+    text = update.message.text
+    parts = text.split(maxsplit=1)
+    
+    if len(parts) < 2:
+        await update.message.reply_text(
+            "Укажите название навыка.\n"
+            "Пример: /top_companies Python"
+        )
+        return
+    
+    skill_name = parts[1].strip()
+    
+    try:
+        response = requests.get(f"{API_URL}/vacancies", timeout=10)
+        response.raise_for_status()
+        vacancies = response.json()
         
+        companies_stats = {}
+        
+        for v in vacancies:
+            if v.get('skills') and skill_name in v['skills']:
+                company = v.get('company_name', 'Неизвестно')
+                if company not in companies_stats:
+                    companies_stats[company] = {
+                        'vacancies': 0,
+                        'salaries': []
+                    }
+                companies_stats[company]['vacancies'] += 1
+                
+                if v.get('salary_min') and v.get('salary_max'):
+                    avg = (v['salary_min'] + v['salary_max']) / 2
+                    companies_stats[company]['salaries'].append(avg)
+                elif v.get('salary_min'):
+                    companies_stats[company]['salaries'].append(v['salary_min'])
+                elif v.get('salary_max'):
+                    companies_stats[company]['salaries'].append(v['salary_max'])
+        
+        if not companies_stats:
+            await update.message.reply_text(f"Компании с навыком '{skill_name}' не найдены")
+            return
+        
+        top = sorted(companies_stats.items(), key=lambda x: x[1]['vacancies'], reverse=True)[:5]
+        
+        message = f"Топ-5 компаний по навыку '{skill_name}'\n\n"
+        
+        for i, (company, stats) in enumerate(top, 1):
+            message += f"{i}. {company}\n"
+            message += f" Вакансий: {stats['vacancies']}\n"
+            if stats['salaries']:
+                avg_salary = int(sum(stats['salaries']) / len(stats['salaries']))
+                message += f" Средняя зарплата: {avg_salary:,} ₽\n"
+            else:
+                message += " Зарплата: не указана\n"
+        
+        await update.message.reply_text(message)
+        
+    except requests.exceptions.RequestException as e:
+        await update.message.reply_text(f"Ошибка при получении данных: {e}")
+
 
 def main():
     application = Application.builder().token(TOKEN).build()
@@ -556,11 +618,13 @@ def main():
     application.add_handler(CommandHandler("salary_chart", salary_chart))
     application.add_handler(CommandHandler("companies_chart", companies_chart))
 
+    application.add_handler(CommandHandler("company_stats", company_stats))
+    application.add_handler(CommandHandler("top_companies", top_companies))
+
     application.add_handler(CallbackQueryHandler(universal_callback_handler))
 
     print("Бот запущен...")
-    application.run_polling() 
-
+    application.run_polling()
 
 if __name__ == "__main__":
     main()
