@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 import sys
 import os
 import requests
@@ -464,6 +461,84 @@ async def companies_chart(update: Update, _):
     except requests.exceptions.RequestException as e:
         await update.message.reply_text(f"Ошибка при получении данных: {e}")
 
+
+async def company_stats(update: Update, _):
+    """Показывает статистику по компании"""
+    text = update.message.text
+    parts = text.split(maxsplit=1)
+    
+    if len(parts) < 2:
+        await update.message.reply_text(
+            "Укажите название компании.\n"
+            "Пример: /company_stats Сбер"
+        )
+        return
+    
+    company_name = parts[1].strip()
+    
+    try:
+        response = requests.get(f"{API_URL}/companies", timeout=10)
+        response.raise_for_status()
+        companies = response.json()
+        
+        company_data = None
+        for c in companies:
+            if company_name.lower() in c['name'].lower():
+                company_data = c
+                break
+        
+        if not company_data:
+            await update.message.reply_text(f"Компания '{company_name}' не найдена")
+            return
+        
+        vacancies_response = requests.get(
+            f"{API_URL}/vacancies?company={company_data['name']}", 
+            timeout=10
+        )
+        vacancies_response.raise_for_status()
+        vacancies = vacancies_response.json()
+        
+        if not vacancies:
+            await update.message.reply_text(f"У компании '{company_name}' нет вакансий")
+            return
+        salaries = []
+        for v in vacancies:
+            if v.get('salary_min') and v.get('salary_max'):
+                avg = (v['salary_min'] + v['salary_max']) / 2
+                salaries.append(avg)
+            elif v.get('salary_min'):
+                salaries.append(v['salary_min'])
+            elif v.get('salary_max'):
+                salaries.append(v['salary_max'])
+        
+        skills_count = {}
+        for v in vacancies:
+            if v.get('skills'):
+                for skill in v['skills']:
+                    skills_count[skill] = skills_count.get(skill, 0) + 1
+        
+        top_skills = sorted(skills_count.items(), key=lambda x: x[1], reverse=True)[:5]
+        
+        message = f"Статистика компании {company_data['name']}\n\n"
+        message += f"Вакансий: {len(vacancies)}\n"
+        
+        if salaries:
+            message += f"• Средняя зарплата: {int(sum(salaries) / len(salaries)):,} ₽\n"
+            message += f"• Минимальная: {min(salaries):,} ₽\n"
+            message += f"• Максимальная: {max(salaries):,} ₽\n"
+        else:
+            message += "• Зарплата: не указана\n"
+        
+        if top_skills:
+            message += "\nТоп-5 навыков:\n"
+            for skill, count in top_skills:
+                message += f" {skill}: {count} вакансий\n"
+        
+        await update.message.reply_text(message)
+        
+    except requests.exceptions.RequestException as e:
+        await update.message.reply_text(f"Ошибка при получении данных: {e}")
+        
 
 def main():
     application = Application.builder().token(TOKEN).build()
